@@ -11,6 +11,7 @@
 #import "PjSipMessage.h"
 
 #define THIS_FILE "APP"
+#define PJ_IPHONE_OS_HAS_MULTITASKING_SUPPORT 0
 
 @implementation PjSipEndpoint
 
