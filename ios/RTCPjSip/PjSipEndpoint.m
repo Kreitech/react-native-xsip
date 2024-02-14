@@ -12,6 +12,7 @@
 
 #define THIS_FILE "APP"
 #define PJ_IPHONE_OS_HAS_MULTITASKING_SUPPORT 0
+#define PJ_ACTIVESOCK_TCP_IPHONE_OS_BG 0
 
 @implementation PjSipEndpoint
 
@@ -26,6 +27,8 @@
 }
 
 - (instancetype) init {
+    // pj_activesock_enable_iphone_os_bg(PJ_FALSE)
+    
     self = [super init];
     self.accounts = [[NSMutableDictionary alloc] initWithCapacity:12];
     self.calls = [[NSMutableDictionary alloc] initWithCapacity:12];
@@ -37,7 +40,6 @@
     if (status != PJ_SUCCESS) {
         NSLog(@"Error in pjsua_create()");
     }
-    
     // Init pjsua
     {
         // Init the config structure
