@@ -38,18 +38,27 @@
 
 
 - (void)answer {
-    // TODO: Add parameters to answer with
-    // TODO: Put on hold previous call
-    
+    [NSThread detachNewThreadSelector:@selector(answerCall) toTarget:self withObject:nil];
+}
+
+- (void)answerCall {
+    // TODO - Review other way to register thread
+    pj_thread_desc a_thread_desc;
+    pj_thread_t *a_thread;
+
+    if (!pj_thread_is_registered()) {
+        pj_thread_register(NULL, a_thread_desc, &a_thread);
+    }
+        
     pjsua_msg_data msgData;
     pjsua_msg_data_init(&msgData);
-    pjsua_call_setting  callOpt;
+    pjsua_call_setting callOpt;
     pjsua_call_setting_default(&callOpt);
-    
-    // TODO: Audio/Video count configuration!
-    callOpt.aud_cnt = 1;
-    callOpt.vid_cnt = 1;
-    
+
+    callOpt.aud_cnt = 1; // Ensure no video is configured if not needed
+    // TODO - Review PJSIP video configuration
+    // callOpt.vid_cnt = 1;
+    // Answer the call on the newly created thread
     pjsua_call_answer2(self.id, &callOpt, 200, NULL, &msgData);
 }
 
