@@ -74,6 +74,11 @@
     if (status != PJ_SUCCESS) {
         return;
     }
+    // Set the orientation of the video to be rotated 90 degrees
+    pjmedia_orient orient = PJMEDIA_ORIENT_ROTATE_90DEG;
+    for (int i = pjsua_vid_dev_count() - 1; i >= 0; i--) {
+        pjsua_vid_dev_set_setting(i, PJMEDIA_VID_DEV_CAP_ORIENTATION, &orient, PJ_TRUE);
+    }
     
     CGFloat width = wi.size.w, height = wi.size.h;
 
