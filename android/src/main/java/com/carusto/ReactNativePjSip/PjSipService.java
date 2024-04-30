@@ -380,7 +380,9 @@ public class PjSipService extends Service {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            mWorkerThread.quitSafely();
+            if (mWorkerThread != null) {
+                mWorkerThread.quitSafely();
+            }
         }
 
         try {
@@ -391,8 +393,10 @@ public class PjSipService extends Service {
         } catch (Exception e) {
             Log.w(TAG, "Failed to destroy PjSip library", e);
         }
-
-        unregisterReceiver(mPhoneStateChangedReceiver);
+        
+        if(mInitialized) {
+            unregisterReceiver(mPhoneStateChangedReceiver);
+        }
 
         mInitialized = false;
 
@@ -421,12 +425,13 @@ public class PjSipService extends Service {
         // Remove link to account
         mAccounts.remove(account);
 
+        // TODO: WE DONT NEED TO REMOVE THE TRANSPORT 
         // Remove transport
-        try {
-            mEndpoint.transportClose(account.getTransportId());
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to close transport for account", e);
-        }
+        // try {
+        //     mEndpoint.transportClose(account.getTransportId());
+        // } catch (Exception e) {
+        //     Log.w(TAG, "Failed to close transport for account", e);
+        // }
 
         // Remove account in PjSip
         account.delete();
