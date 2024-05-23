@@ -74,11 +74,9 @@
     if (status != PJ_SUCCESS) {
         return;
     }
-    // Set the orientation of the video to be rotated 90 degrees
-    pjmedia_orient orient = PJMEDIA_ORIENT_ROTATE_90DEG;
-    for (int i = pjsua_vid_dev_count() - 1; i >= 0; i--) {
-        pjsua_vid_dev_set_setting(i, PJMEDIA_VID_DEV_CAP_ORIENTATION, &orient, PJ_TRUE);
-    }
+    // TODO: Review codec configuration and orientation
+    [self changeCodec];
+    [self changeOrientation];
     
     CGFloat width = wi.size.w, height = wi.size.h;
 
@@ -116,6 +114,45 @@
     }
     
     subview.transform = CGAffineTransformIdentity;
+}
+
+- (void) changeOrientation {
+    // Set the orientation of the video to be rotated 90 degrees
+    pjmedia_orient orient = PJMEDIA_ORIENT_ROTATE_90DEG;
+    for (int i = pjsua_vid_dev_count() - 1; i >= 0; i--) {
+        pjsua_vid_dev_set_setting(i, PJMEDIA_VID_DEV_CAP_ORIENTATION, &orient, PJ_TRUE);
+    }
+}
+
+-(void) changeCodec {
+    // TODO : Review codec configuration
+    // {"H264", 4};
+    const pj_str_t codec_id = {"H264", 2};
+    pjmedia_vid_codec_param param;
+    
+    pjsua_vid_codec_get_param(&codec_id, &param);
+        
+    /* Sending 1280 x 720 */
+    param.enc_fmt.det.vid.size.w = 640; //1280
+    param.enc_fmt.det.vid.size.h = 480; //720
+        
+    param.dec_fmt.det.vid.size.w = 640; //1280
+    param.dec_fmt.det.vid.size.h = 480; //720
+        
+    /* Sending @30fps */
+    param.enc_fmt.det.vid.fps.num   = 30;
+    param.enc_fmt.det.vid.fps.denum = 1;
+        
+    param.dec_fmt.det.vid.fps.num   = 30;
+    param.dec_fmt.det.vid.fps.denum = 1;
+        
+    /* Bitrate range preferred: 512-1024kbps */
+    param.enc_fmt.det.vid.avg_bps = 512000;
+    param.enc_fmt.det.vid.max_bps = 1024000;
+        
+    param.dec_fmt.det.vid.avg_bps = 512000;
+    param.dec_fmt.det.vid.max_bps = 1024000;
+    pjsua_vid_codec_set_param(&codec_id, &param);
 }
 
 /**
