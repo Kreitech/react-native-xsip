@@ -68,6 +68,12 @@ import java.lang.reflect.Type;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.net.wifi.WifiManager;
+
 public class PjSipService extends Service {
 
     private static String TAG = "PjSipService";
@@ -131,10 +137,17 @@ public class PjSipService extends Service {
     public PjSipBroadcastEmiter getEmitter() {
         return mEmitter;
     }
+    private ConnectivityManager connectivityManager;
+    
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     public void onCreate() {
         super.onCreate();
-         String channelId = "";
+        backgroundService();
+    }
+
+    public void backgroundService() {
+       String channelId = "";
          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
              channelId = "com.joluz.joluzapp";
              String channelName = "My Background Service";
@@ -148,6 +161,68 @@ public class PjSipService extends Service {
                  .setContentTitle("Masterson Seguridad").setContentText("Activo").build();
 
          startForeground(1337, notification);
+    }
+
+    private void registerNetworkCallback() {
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            NetworkRequest networkRequest = new NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    .build();
+
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    super.onAvailable(network);
+                    Log.d(TAG, "Network available, checking for IP change");
+                }
+
+                @Override
+                public void onLost(Network network) {
+                    super.onLost(network);
+                    Log.d(TAG, "Network lost");
+                }
+
+                @Override
+                public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
+                    super.onCapabilitiesChanged(network, networkCapabilities);
+                    if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                        Log.d(TAG, "Connected to Wi-Fi");
+                    } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                        Log.d(TAG, "Connected to Mobile Data");
+                    }
+                    handleIpChange();
+                }
+
+                @Override
+                public void onLosing(Network network, int maxMsToLive) {
+                    super.onLosing(network, maxMsToLive);
+                    Log.d(TAG, "Losing network, IP may change soon");
+                }
+            };
+            connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+        } else {
+            // Handle older versions with BroadcastReceiver (optional)
+            Log.w(TAG, "Network callback not supported on this Android version.");
+        }
+    }
+
+    private void handleIpChange() {
+        job(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    IpChangeParam ipChangeParam = new IpChangeParam();
+                    ipChangeParam.setRestartLisDelay(1);
+                    ipChangeParam.setRestartListener(true);
+                    mEndpoint.handleIpChange(ipChangeParam);
+                    Log.d(TAG, "IP change handled successfully, transports and accounts re-registered");
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to handle IP change", e);
+                }
+            }
+        });
     }
 
     public void onTaskRemoved(Intent rootIntent) {
@@ -240,6 +315,9 @@ public class PjSipService extends Service {
             mTrash.add(transportConfig);
 
             mEndpoint.libStart();
+            // Network change listener
+            connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            registerNetworkCallback();
 
 //             mEndpoint = new Endpoint();
 //             mEndpoint.libCreate();
@@ -404,6 +482,12 @@ public class PjSipService extends Service {
         }
 
         mInitialized = false;
+
+        if (connectivityManager != null && networkCallback != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            }
+        }
 
         super.onDestroy();
     }
