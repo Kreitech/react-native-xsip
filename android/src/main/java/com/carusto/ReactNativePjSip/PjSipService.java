@@ -73,6 +73,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiManager;
+import org.pjsip.pjsua2.IpChangeParam;
 
 public class PjSipService extends Service {
 
