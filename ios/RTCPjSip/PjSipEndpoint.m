@@ -9,6 +9,7 @@
 #import "PjSipUtil.h"
 #import "PjSipEndpoint.h"
 #import "PjSipMessage.h"
+#import <Network/Network.h>
 
 #define THIS_FILE "APP"
 #define PJ_IPHONE_OS_HAS_MULTITASKING_SUPPORT 0
@@ -149,8 +150,61 @@
     // Initialization is done, now start pjsua
     status = pjsua_start();
     if (status != PJ_SUCCESS) NSLog(@"Error starting pjsua");
-    
+    [self setupNetworkMonitor];
+
     return self;
+}
+
+- (void)dealloc {
+    nw_path_monitor_cancel(self.pathMonitor);
+}
+
+- (void)setupNetworkMonitor {
+    self.pathMonitor = nw_path_monitor_create();
+    __weak typeof(self) weakSelf = self;
+
+    nw_path_monitor_set_update_handler(self.pathMonitor, ^(nw_path_t path) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+
+        if (strongSelf.currentPath) {
+            if (nw_path_get_status(strongSelf.currentPath) != nw_path_get_status(path)) {
+                [strongSelf handleNetworkChange];
+            }
+        }
+
+        strongSelf.currentPath = path;
+    });
+
+    nw_path_monitor_set_queue(self.pathMonitor, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    nw_path_monitor_start(self.pathMonitor);
+}
+
+- (void)handleNetworkChange {
+    NSLog(@"Network change detected. Handling IP change...");
+    
+    pj_thread_desc desc;
+    pj_thread_t *thread = NULL;
+
+    if (!pj_thread_is_registered()) {
+        pj_bzero(&desc, sizeof(desc));
+        pj_thread_register("pjsip", desc, &thread);
+    }
+
+    // Handle IP change using PJSUA2 API
+    pjsua_ip_change_param params;
+    pjsua_ip_change_param_default(&params);  // Initialize with default values
+
+    // 1 second to restart the listener
+    params.restart_lis_delay = 1000; // Set the restart delay time
+    params.restart_listener = PJ_TRUE; // Indicate if listener should be restarted
+
+    pj_status_t status = pjsua_handle_ip_change(&params);
+
+    if (status != PJ_SUCCESS) {
+        NSLog(@"Error handling IP change: %d", status);
+    } else {
+        NSLog(@"IP change handled successfully.");
+    }
 }
 
 - (NSDictionary *)start: (NSDictionary *)config {
