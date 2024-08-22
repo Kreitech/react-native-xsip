@@ -2,6 +2,7 @@
 
 #import "PjSipAccount.h"
 #import "PjSipCall.h"
+#import <Network/Network.h>
 
 
 @interface PjSipEndpoint : NSObject
@@ -9,6 +10,9 @@
 @property NSMutableDictionary* accounts;
 @property NSMutableDictionary* calls;
 @property(nonatomic, strong) RCTBridge *bridge;
+
+@property (nonatomic) nw_path_monitor_t pathMonitor;
+@property (nonatomic) nw_path_t currentPath;
 
 @property pjsua_transport_id tcpTransportId;
 @property pjsua_transport_id udpTransportId;
