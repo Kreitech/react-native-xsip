@@ -92,7 +92,11 @@
         pjsua_media_config_default(&mediaConfig);
         mediaConfig.clock_rate = PJSUA_DEFAULT_CLOCK_RATE;
         mediaConfig.snd_clock_rate = 0;
-        
+
+        // Configure jitter buffer to handle greater jitter
+        mediaConfig.jb_min_pre = 60;  // Minimum prefetch (in ms)
+        mediaConfig.jb_max_pre = 120; // Maximum prefetch (in ms)
+
         // Init the pjsua
         status = pjsua_init(&cfg, &log_cfg, &mediaConfig);
         if (status != PJ_SUCCESS) {

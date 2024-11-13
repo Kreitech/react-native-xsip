@@ -75,7 +75,7 @@
         return;
     }
     // TODO: Review codec configuration and orientation
-    [self changeCodec];
+    // [self changeCodec];
     [self changeOrientation];
     
     CGFloat width = wi.size.w, height = wi.size.h;
