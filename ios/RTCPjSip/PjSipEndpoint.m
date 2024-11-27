@@ -439,6 +439,10 @@
 
 -(void)emmitEvent:(NSString*) name body:(id)body {
     [[self.bridge eventDispatcher] sendAppEventWithName:name body:body];
+    // Post a notification for native listeners
+    [[NSNotificationCenter defaultCenter] postNotificationName:name
+                                                            object:self
+                                                          userInfo:body];
 }
 
 
